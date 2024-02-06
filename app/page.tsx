@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
 	return (
 		<div className='hero min-h-screen bg-base-200'>
@@ -7,14 +9,15 @@ export default function Home() {
 						GPTMovies
 					</h1>
 					<p className='py-6 text-blue-600 text-lg '>
-						GPTMovies: AI-driven platform for personalized movie
-						recommendations. Input your favorite genre and actors for tailored
-						suggestions based on reviews and ratings. Intuitive interface and
-						adaptive learning enhance the movie-watching experience.
+						AI-driven platform for personalized movie recommendations. Intuitive
+						interface and adaptive learning enhance the movie-watching
+						experience.
 					</p>
-					<button className='btn bg-gradient-to-r from-blue-600 to-violet-500 text-white'>
+					<Link
+						className='btn bg-gradient-to-r from-blue-600 to-violet-500 text-white'
+						href='/chat'>
 						Get Started
-					</button>
+					</Link>
 				</div>
 			</div>
 		</div>
