@@ -1,13 +1,18 @@
 "use client";
 
+import { generateChatResponse } from "@/utils/action";
+import { useMutation } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
 
 const Chat = () => {
 	const [question, setQuestion] = useState<string>("");
 	const [message, setMessage] = useState<string[]>([]);
+	const { mutate } = useMutation({
+		mutationFn: (message: string) => generateChatResponse(message),
+	});
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		console.log(question);
+		mutate(question);
 	};
 	return (
 		<div className='min-h-[calc(100vh-6rem)] flex flex-col justify-between'>
@@ -32,3 +37,4 @@ const Chat = () => {
 };
 
 export default Chat;
+("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");
