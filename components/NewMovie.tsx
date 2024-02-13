@@ -2,15 +2,13 @@
 
 import React from "react";
 import MovieInfo from "./MovieInfo";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-	createNewMovie,
-	generateMovieResponse,
-	getExistingMovie,
-} from "@/utils/actions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { IoMdInformationCircleOutline } from "react-icons/io";
+import { createNewMovie, generateMovieResponse } from "@/utils/actions";
 import toast from "react-hot-toast";
 
 const NewMovie = () => {
+	const queryClient = useQueryClient();
 	const {
 		mutate,
 		isPending,
@@ -19,6 +17,11 @@ const NewMovie = () => {
 		mutationFn: async (destination) => {
 			const newMovie = await generateMovieResponse(destination);
 			if (newMovie) {
+				if (newMovie.id) {
+					return newMovie;
+				}
+				await createNewMovie(newMovie);
+				queryClient.invalidateQueries({ queryKey: ["movies"] });
 				return newMovie;
 			}
 			toast.error("No movies found..");
@@ -37,7 +40,12 @@ const NewMovie = () => {
 	return (
 		<>
 			<form onSubmit={(e) => handleSubmit(e)} className='max-w-2xl'>
-				<h2 className='mb-4'>Generate a new movie..</h2>
+				<h2 className="flex gap-1 items-center mb-4 hover:after:content-['Generates_random_movie_based_on_the_filters..'] hover:after:bg-primary hover:after:shadow-xl hover:after:text-white hover:after:p-2 hover:after:rounded-lg hover:after:absolute hover:after:top-2">
+					<span className='inline-block'>
+						<IoMdInformationCircleOutline />
+					</span>
+					Generate a new movie..
+				</h2>
 				<div className='join w-full'>
 					<input
 						type='text'
@@ -50,7 +58,7 @@ const NewMovie = () => {
 						type='text'
 						className='input input-bordered join-item w-full'
 						placeholder='Year'
-						name='Year'
+						name='year'
 						required
 					/>
 					<button className='btn btn-primary join-item' type='submit'>
