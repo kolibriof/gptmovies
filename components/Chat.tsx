@@ -24,17 +24,18 @@ const Chat = () => {
 					toast.error("Token balance is too low.");
 					return null;
 				}
-				const resp = await generateChatResponse(
-					messages ? ([...messages, query] as any) : "",
-				);
-				if (!resp) {
-					toast.error("Something went wrong..");
-					return;
-				}
-				setMessages((prev) => (prev ? ([...prev, resp.message] as any) : ""));
-				const newTokens = await subtractTokens(userId, resp.tokens);
-				toast.success(`${newTokens} tokens left`);
 			}
+			const resp = await generateChatResponse(
+				messages ? ([...messages, query] as any) : "",
+			);
+
+			if (!resp) {
+				toast.error("No response..");
+				return;
+			}
+			setMessages((prev) => (prev ? ([...prev, resp.message] as any) : ""));
+			const newTokens = await subtractTokens(userId, resp.tokens);
+			toast.success(`${newTokens} tokens left`);
 		},
 	});
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -47,7 +48,6 @@ const Chat = () => {
 		setMessages((prev) => (prev ? ([...prev, tempQuestion] as any) : ""));
 		setQuestion("");
 	};
-	console.log(messages);
 	return (
 		<div className='min-h-[calc(100vh-6rem)] flex flex-col justify-between'>
 			<div className='flex flex-col gap-3 w-full overflow-y-auto'>
@@ -55,6 +55,7 @@ const Chat = () => {
 					messages.map((message: MessageToGPT) => {
 						return (
 							<div
+								key={message.content}
 								className={`flex flex-row gap-3 items-center text-xl p-3 ${
 									message.role === "assistant" && `bg-base-100 rounded-lg`
 								}`}>

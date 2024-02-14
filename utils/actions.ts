@@ -5,7 +5,6 @@ import prisma from "./db";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs";
 import toast from "react-hot-toast";
-import { multipartFormRequestOptions } from "openai/uploads.mjs";
 
 export interface MessageToGPT {
 	role: string;
@@ -30,12 +29,16 @@ export const generateChatResponse = async (chatMessages: MessageToGPT) => {
 			model: "gpt-3.5-turbo-0125",
 			temperature: 0,
 		});
+		console.log(chatMessages);
+		console.log(response);
 
 		return {
 			message: response.choices[0].message,
 			tokens: response.usage?.total_tokens,
 		};
 	} catch (error) {
+		console.log(error);
+
 		return null;
 	}
 };
