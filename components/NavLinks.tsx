@@ -4,6 +4,7 @@ const links = [
 	{ href: "/chat", label: "Chat" },
 	{ href: "/movies", label: "movies" },
 	{ href: "/movies/new-movie", label: "New Movie" },
+	{ href: "/suggestmovie", label: "Suggest Movie" },
 	{ href: "/profile", label: "profile" },
 ];
 

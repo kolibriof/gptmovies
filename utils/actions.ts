@@ -185,3 +185,54 @@ export const subtractTokens = async (clerkId: any, tokens: any) => {
 	revalidatePath("/profile");
 	return result.tokens;
 };
+
+export const GetSuggestedMovie = async (givenMovies: string[]) => {
+	const { userId } = auth();
+	const currentTokens = await fetchUserTokensById(userId);
+
+	if (currentTokens! < 200) {
+		return { tokens: "NOT_ENOUGH" };
+	}
+
+	if (givenMovies.length < 3) {
+		toast.error("Please provide 3 movies.");
+		return;
+	}
+	try {
+		const resp = await openai.chat.completions.create({
+			messages: [
+				{
+					role: "system",
+					content: "You are the movie guru.",
+				},
+				{
+					role: "user",
+					content: `Find a similar movie based on these three movies - ${givenMovies[0]}, ${givenMovies[1]}, ${givenMovies[2]}.
+Find one random movie. Once you have the data, respond in the JSON format like that:
+{
+  "movie": {
+    "year": year,
+    "title": "title of the movie",
+    "description": "short description of the movie",
+    "rating": "rating"
+  }
+}
+"ratings" should include only 1 rating.
+If you can't find info on exact movie or movie does not exist or something else goes wrong,  return { "movie": null }, with no additional characters.`,
+				},
+			],
+			model: "gpt-3.5-turbo-0125",
+			temperature: 0,
+		});
+		if (resp.choices[0].message.content !== null) {
+			const movieData = JSON.parse(resp.choices[0].message.content);
+			if (!movieData.movie) {
+				return null;
+			}
+			return { movie: movieData.movie, tokens: resp.usage?.total_tokens };
+		}
+	} catch (error) {
+		console.log(error);
+		return null;
+	}
+};
