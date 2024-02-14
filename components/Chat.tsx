@@ -1,6 +1,12 @@
 "use client";
 
-import { MessageToGPT, generateChatResponse } from "@/utils/actions";
+import {
+	MessageToGPT,
+	fetchUserTokensById,
+	generateChatResponse,
+	subtractTokens,
+} from "@/utils/actions";
+import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
 import toast from "react-hot-toast";
@@ -9,15 +15,26 @@ import { RiRobot2Fill, RiUser3Fill } from "react-icons/ri";
 const Chat = () => {
 	const [question, setQuestion] = useState<string>("");
 	const [messages, setMessages] = useState([]);
+	const { userId } = useAuth();
 	const { mutate, isPending } = useMutation({
-		mutationFn: (q: MessageToGPT) =>
-			generateChatResponse(messages ? ([...messages, q] as any) : ""),
-		onSuccess: (data) => {
-			if (!data) {
-				toast.error("There was some error.");
-				return;
+		mutationFn: async (query) => {
+			const currentTokens = await fetchUserTokensById(userId);
+			if (currentTokens) {
+				if (currentTokens < 100) {
+					toast.error("Token balance is too low.");
+					return null;
+				}
+				const resp = await generateChatResponse(
+					messages ? ([...messages, query] as any) : "",
+				);
+				if (!resp) {
+					toast.error("Something went wrong..");
+					return;
+				}
+				setMessages((prev) => (prev ? ([...prev, resp.message] as any) : ""));
+				const newTokens = await subtractTokens(userId, resp.tokens);
+				toast.success(`${newTokens} tokens left`);
 			}
-			setMessages((prev) => (prev ? ([...prev, data] as any) : ""));
 		},
 	});
 	const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -26,7 +43,7 @@ const Chat = () => {
 			role: "user",
 			content: question,
 		};
-		mutate(tempQuestion);
+		mutate(tempQuestion as any);
 		setMessages((prev) => (prev ? ([...prev, tempQuestion] as any) : ""));
 		setQuestion("");
 	};

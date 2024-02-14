@@ -4,11 +4,17 @@ import React from "react";
 import MovieInfo from "./MovieInfo";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { IoMdInformationCircleOutline } from "react-icons/io";
-import { createNewMovie, generateMovieResponse } from "@/utils/actions";
+import {
+	createNewMovie,
+	generateMovieResponse,
+	subtractTokens,
+} from "@/utils/actions";
 import toast from "react-hot-toast";
+import { useAuth } from "@clerk/nextjs";
 
 const NewMovie = () => {
 	const queryClient = useQueryClient();
+	const { userId } = useAuth();
 	const {
 		mutate,
 		isPending,
@@ -17,12 +23,15 @@ const NewMovie = () => {
 		mutationFn: async (destination) => {
 			const newMovie = await generateMovieResponse(destination);
 			if (newMovie) {
+				const newTokens = await subtractTokens(userId, newMovie.tokens);
 				if (newMovie.id) {
+					// true if the movie is already in the db
 					return newMovie;
 				}
-				await createNewMovie(newMovie);
+				await createNewMovie(newMovie.movie);
 				queryClient.invalidateQueries({ queryKey: ["movies"] });
-				return newMovie;
+				toast.success(`${newTokens} tokens left.`);
+				return newMovie.movie;
 			}
 			toast.error("No movies found..");
 			return null;

@@ -21,3 +21,8 @@ model Movie {
   image String? @db.Text
   @@unique([title, year])
 }
+
+model Token {
+  clerkId String @id
+  tokens Int @default(1000)
+}

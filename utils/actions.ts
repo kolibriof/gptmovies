@@ -2,6 +2,10 @@
 
 import OpenAI from "openai";
 import prisma from "./db";
+import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs";
+import toast from "react-hot-toast";
+import { multipartFormRequestOptions } from "openai/uploads.mjs";
 
 export interface MessageToGPT {
 	role: string;
@@ -15,6 +19,7 @@ const openai = new OpenAI({
 export const generateChatResponse = async (chatMessages: MessageToGPT) => {
 	try {
 		const response = await openai.chat.completions.create({
+			max_tokens: 100,
 			messages: [
 				{
 					role: "system",
@@ -25,10 +30,11 @@ export const generateChatResponse = async (chatMessages: MessageToGPT) => {
 			model: "gpt-3.5-turbo-0125",
 			temperature: 0,
 		});
-		console.log(response.choices[0].message);
-		console.log(response);
 
-		return response.choices[0].message;
+		return {
+			message: response.choices[0].message,
+			tokens: response.usage?.total_tokens,
+		};
 	} catch (error) {
 		return null;
 	}
@@ -47,6 +53,14 @@ export const getExistingMovie = async ({ title, year }: any) => {
 
 export const generateMovieResponse = async ({ genre, year }: any) => {
 	try {
+		const { userId } = auth();
+		const currentTokens = await fetchUserTokensById(userId);
+		if (currentTokens) {
+			if (currentTokens < 300) {
+				toast.error("Token balance is too low.");
+				return null;
+			}
+		}
 		const resp = await openai.chat.completions.create({
 			messages: [
 				{
@@ -85,6 +99,7 @@ If you can't find info on exact movie or movie does not exist or something else 
 			if (movieExists) {
 				const { id, year, title, description, rating } = movieExists;
 				return {
+					tokens: resp.usage?.total_tokens,
 					id,
 					year,
 					title,
@@ -92,9 +107,8 @@ If you can't find info on exact movie or movie does not exist or something else 
 					rating,
 				};
 			}
-			return movieData.movie;
+			return { movie: movieData.movie, tokens: resp.usage?.total_tokens };
 		}
-		console.log(resp);
 	} catch (error) {
 		console.log(error);
 		return null;
@@ -129,4 +143,45 @@ export const getSingleMovie = async (id: any) => {
 		return singleMovie;
 	}
 	return null;
+};
+
+export const fetchUserTokensById = async (clerkId: any) => {
+	const res = await prisma.token.findUnique({
+		where: {
+			clerkId,
+		},
+	});
+	return res?.tokens;
+};
+
+export const generateUserTokensForId = async (clerkId: any) => {
+	const result = await prisma.token.create({
+		data: {
+			clerkId,
+		},
+	});
+	return result?.tokens;
+};
+
+export const fetchOrGenerateTokens = async (clerkId: any) => {
+	const res = await fetchUserTokensById(clerkId);
+	if (res) {
+		return res;
+	}
+	return await generateUserTokensForId(clerkId);
+};
+
+export const subtractTokens = async (clerkId: any, tokens: any) => {
+	const result = await prisma.token.update({
+		where: {
+			clerkId,
+		},
+		data: {
+			tokens: {
+				decrement: tokens,
+			},
+		},
+	});
+	revalidatePath("/profile");
+	return result.tokens;
 };
